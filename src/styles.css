@@ -47,8 +47,8 @@
   --shadow-border-hover: var(--mm-shadow-hover);
 }
 
-:root,
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html:not([data-theme]) {
   --mm-bg: #0c0d0f;
   --mm-surface: #141518;
   --mm-surface-2: #1c1d21;

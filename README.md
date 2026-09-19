@@ -23,3 +23,9 @@ Defaults to `http://0.0.0.0:8080`.
 - `npm test` — unit tests
 
 Imported from a Grok export. Wire your own auth/Stripe env as needed.
+
+## Dev / Usage
+
+In **Settings**:
+- **Load sample household** — seed demo rent/EMIs/utilities when empty.
+- **Start fresh** — erase all bills (tap twice to confirm).
