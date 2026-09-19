@@ -1,30 +1,36 @@
 /**
  * Self-hosted Better Auth for THIS app (server-only).
  *
- * Sign-in modes (smallest change for Vercel without GROK_AUTH_*):
- *   - **Direct social (default for deploy):** set `GOOGLE_CLIENT_ID` /
- *     `GOOGLE_CLIENT_SECRET` and/or `TWITTER_CLIENT_ID` /
- *     `TWITTER_CLIENT_SECRET`. Better Auth `socialProviders`; callbacks at
- *     `/api/auth/callback/google` and `/api/auth/callback/twitter`.
+ * Sign-in modes (Ship — Google + email + phone; no X in UI):
+ *   - **Google social:** `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+ *     Callback: `/api/auth/callback/google`.
+ *   - **Email + password:** toggled via `./email-password` (enabled for Ship).
+ *   - **Phone OTP:** Better Auth `phoneNumber` plugin; SMS via Twilio when
+ *     `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `TWILIO_PHONE_NUMBER` are set.
  *   - **Optional Grok broker:** only when **explicit** `GROK_AUTH_CLIENT_ID` +
- *     `GROK_AUTH_CLIENT_SECRET` are set (preview baked defaults do NOT count —
- *     those caused empty HTTP 500 oauth2 on Vercel). Uses `genericOAuth`.
+ *     `GROK_AUTH_CLIENT_SECRET` are set (preview baked defaults do NOT count).
  *   - Off (`VITE_AUTH_ENABLED=false`): no providers; `requireUserId` uses the
  *     dev user without a database, fail-closed when `DATABASE_URL` is set.
  *
- * `authConfigured` = auth on && (any social OR explicit broker).
+ * `authConfigured` = auth on && (Google OR email/password OR phone Twilio OR
+ * explicit broker). Dead `TWITTER_*` env still wires social if set, unused by UI.
  *
  * NEVER import this from client code — it pulls in `pg` + server-only Better
  * Auth internals. The client uses `@/lib/auth/client`.
  */
 import { betterAuth } from "better-auth";
-import { bearer, genericOAuth } from "better-auth/plugins";
+import { bearer, genericOAuth, phoneNumber } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
+import {
+  isValidIndiaPhone,
+  normalizeIndiaPhone,
+  tempPhoneEmail,
+} from "./phone";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { AUTH_PROVIDERS, GROK_BROKER_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
@@ -60,7 +66,7 @@ const env = (key: string): string | undefined => {
 // provisions auth; set it to "false" to force auth off everywhere (dev user).
 const authDisabled = env("VITE_AUTH_ENABLED") === "false";
 
-// Direct Better Auth social providers (Google / X). No Grok broker required.
+// Direct Better Auth social (Google primary; TWITTER_* left as unused dead path).
 const googleClientId = env("GOOGLE_CLIENT_ID");
 const googleClientSecret = env("GOOGLE_CLIENT_SECRET");
 const twitterClientId = env("TWITTER_CLIENT_ID");
@@ -68,6 +74,14 @@ const twitterClientSecret = env("TWITTER_CLIENT_SECRET");
 const googleConfigured = Boolean(googleClientId && googleClientSecret);
 const twitterConfigured = Boolean(twitterClientId && twitterClientSecret);
 const socialConfigured = googleConfigured || twitterConfigured;
+
+// Phone OTP via Twilio (Better Auth phoneNumber plugin).
+const twilioAccountSid = env("TWILIO_ACCOUNT_SID");
+const twilioAuthToken = env("TWILIO_AUTH_TOKEN");
+const twilioPhoneNumber = env("TWILIO_PHONE_NUMBER");
+export const phoneTwilioConfigured = Boolean(
+  twilioAccountSid && twilioAuthToken && twilioPhoneNumber,
+);
 
 // Optional Grok broker — ONLY when both client id and secret are set explicitly.
 // Do NOT fall back to PREVIEW_CLIENT_* here: on Vercel those defaults make
@@ -77,9 +91,47 @@ const grokClientId = env("GROK_AUTH_CLIENT_ID");
 const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET");
 const brokerConfigured = Boolean(grokClientId && grokClientSecret);
 
-/** True when federated sign-in is active (real auth is enforced). */
+/**
+ * True when real auth is enforced: Google, email/password, phone Twilio,
+ * leftover Twitter secrets, or explicit broker. Email/password alone is enough
+ * for DB mode when VITE_AUTH_ENABLED is not false.
+ */
 export const authConfigured =
-  !authDisabled && (socialConfigured || brokerConfigured);
+  !authDisabled &&
+  (socialConfigured ||
+    brokerConfigured ||
+    emailAndPasswordEnabled ||
+    phoneTwilioConfigured);
+
+async function sendTwilioOTP(phone: string, code: string): Promise<void> {
+  if (!phoneTwilioConfigured) {
+    throw new Error("Phone sign-in needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER.");
+  }
+  const to = normalizeIndiaPhone(phone) ?? phone;
+  const body = new URLSearchParams({
+    To: to,
+    From: twilioPhoneNumber as string,
+    Body: `Your Money Mate code is ${code}`,
+  });
+  const authHeader = Buffer.from(
+    `${twilioAccountSid}:${twilioAuthToken}`,
+  ).toString("base64");
+  const res = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${authHeader}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Could not send SMS (${res.status}). Try again.`);
+  }
+}
 
 // This app's own Better Auth origin. When deployed the deployer injects the
 // public URL. In the sandbox live preview there's no fixed URL (each preview gets
@@ -291,6 +343,18 @@ export const auth = betterAuth({
 
     // Optional Grok broker genericOAuth (only when explicit GROK_AUTH_* set).
     ...(grokOAuthPlugin ? [grokOAuthPlugin] : []),
+
+    // Phone OTP (India +91). SMS only when TWILIO_* are set.
+    phoneNumber({
+      sendOTP: async ({ phoneNumber: phone, code }) => {
+        await sendTwilioOTP(phone, code);
+      },
+      phoneNumberValidator: (phone) => isValidIndiaPhone(phone),
+      signUpOnVerification: {
+        getTempEmail: (phone) => tempPhoneEmail(phone),
+        getTempName: (phone) => phone,
+      },
+    }),
 
     // Accept `Authorization: Bearer <session-token>` as an alternative to the
     // cookie. Needed for the LIVE PREVIEW: the app runs in an embedded iframe

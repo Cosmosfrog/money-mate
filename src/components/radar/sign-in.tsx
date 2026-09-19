@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { GROK_PROVIDERS } from "@/lib/auth/client";
+import { authClient, GROK_PROVIDERS } from "@/lib/auth/client";
+import { normalizeIndiaPhone } from "@/lib/auth/phone";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { startProviderSignIn } from "@/lib/radar/sign-in-flow";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme";
@@ -18,7 +21,7 @@ export function RadarSplash({ label = "Checking your account…" }: { label?: st
 
 export function RadarSignIn({ authReady = true }: { authReady?: boolean }) {
   return (
-    <div className="relative flex min-h-dvh items-center justify-center bg-bg px-4">
+    <div className="relative flex min-h-dvh items-center justify-center bg-bg px-4 py-10">
       <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20">
         <ThemeToggle compact />
       </div>
@@ -34,13 +37,13 @@ export function RadarSignIn({ authReady = true }: { authReady?: boolean }) {
           Sign in to keep your bills
         </h1>
         <p className="mt-3 text-sm text-muted">
-          Google or X. Rent, EMIs, and payday leftover follow this account on every phone.
+          Google, email, or phone. Rent, EMIs, and payday leftover follow this account on every phone.
         </p>
         <div className="mt-8 flex flex-col gap-3">
           <AuthButtons ready={authReady} />
         </div>
         <p className="mt-6 text-xs text-subtle">
-          A secure window opens. We never see your password.
+          Google opens a secure window. Email and phone stay on this page.
         </p>
       </div>
     </div>
@@ -62,12 +65,13 @@ export function AuthButtons({
       <div className={cn("flex flex-col gap-3", className)} aria-hidden="true">
         <div className="h-12 animate-pulse rounded-md bg-surface-2" />
         <div className="h-12 animate-pulse rounded-md bg-surface-2" />
+        <div className="h-24 animate-pulse rounded-md bg-surface-2" />
       </div>
     );
   }
 
   return (
-    <div className={cn("relative z-10 flex flex-col gap-3", className)}>
+    <div className={cn("relative z-10 flex flex-col gap-4", className)}>
       {GROK_PROVIDERS.map((provider) => (
         <ProviderButton
           key={provider.providerId}
@@ -89,8 +93,285 @@ export function AuthButtons({
           }}
         />
       ))}
+
+      <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-subtle">
+        <span className="h-px flex-1 bg-border" />
+        or
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <EmailPasswordForm
+        busy={busy}
+        setBusy={setBusy}
+        setError={setError}
+      />
+
+      <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-subtle">
+        <span className="h-px flex-1 bg-border" />
+        phone
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <PhoneOtpForm
+        busy={busy}
+        setBusy={setBusy}
+        setError={setError}
+      />
+
       {error ? <p className="text-sm text-danger">{error}</p> : null}
     </div>
+  );
+}
+
+function EmailPasswordForm({
+  busy,
+  setBusy,
+  setError,
+}: {
+  busy: string | null;
+  setBusy: (v: string | null) => void;
+  setError: (v: string) => void;
+}) {
+  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const locked = Boolean(busy);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setError("");
+    setBusy("email");
+    try {
+      if (mode === "sign-up") {
+        const { error } = await authClient.signUp.email({
+          email: email.trim(),
+          password,
+          name: name.trim() || email.trim().split("@")[0] || "User",
+        });
+        if (error) throw new Error(error.message ?? "Sign-up failed. Try again.");
+      } else {
+        const { error } = await authClient.signIn.email({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw new Error(error.message ?? "Sign-in failed. Try again.");
+      }
+      window.location.assign("/");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      setError(message);
+      toast.error(message);
+      setBusy(null);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <div className="flex gap-2 text-sm">
+        <button
+          type="button"
+          className={cn(
+            "rounded-md px-3 py-1.5",
+            mode === "sign-in" ? "bg-surface-2 text-fg" : "text-muted hover:text-fg",
+          )}
+          disabled={locked}
+          onClick={() => setMode("sign-in")}
+        >
+          Sign in
+        </button>
+        <button
+          type="button"
+          className={cn(
+            "rounded-md px-3 py-1.5",
+            mode === "sign-up" ? "bg-surface-2 text-fg" : "text-muted hover:text-fg",
+          )}
+          disabled={locked}
+          onClick={() => setMode("sign-up")}
+        >
+          Sign up
+        </button>
+      </div>
+      {mode === "sign-up" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="mm-name">Name</Label>
+          <Input
+            id="mm-name"
+            name="name"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={locked}
+            placeholder="Your name"
+          />
+        </div>
+      ) : null}
+      <div className="space-y-1.5">
+        <Label htmlFor="mm-email">Email</Label>
+        <Input
+          id="mm-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={locked}
+          placeholder="you@example.com"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="mm-password">Password</Label>
+        <Input
+          id="mm-password"
+          name="password"
+          type="password"
+          autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={locked}
+          placeholder="At least 8 characters"
+        />
+      </div>
+      <Button type="submit" className="h-12 w-full" disabled={locked}>
+        {busy === "email"
+          ? mode === "sign-up"
+            ? "Creating account…"
+            : "Signing in…"
+          : mode === "sign-up"
+            ? "Create account"
+            : "Sign in with email"}
+      </Button>
+    </form>
+  );
+}
+
+function PhoneOtpForm({
+  busy,
+  setBusy,
+  setError,
+}: {
+  busy: string | null;
+  setBusy: (v: string | null) => void;
+  setError: (v: string) => void;
+}) {
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [e164, setE164] = useState("");
+  const [code, setCode] = useState("");
+  const locked = Boolean(busy);
+
+  async function sendOtp(e: FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setError("");
+    const normalized = normalizeIndiaPhone(phoneInput);
+    if (!normalized) {
+      const message = "Enter a valid Indian mobile (+91 or 10 digits).";
+      setError(message);
+      toast.error(message);
+      return;
+    }
+    setBusy("phone-send");
+    try {
+      const { error } = await authClient.phoneNumber.sendOtp({
+        phoneNumber: normalized,
+      });
+      if (error) throw new Error(error.message ?? "Could not send code. Try again.");
+      setE164(normalized);
+      setStep("code");
+      toast.success("Code sent by SMS.");
+      setBusy(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not send code.";
+      setError(message);
+      toast.error(message);
+      setBusy(null);
+    }
+  }
+
+  async function verifyOtp(e: FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setError("");
+    setBusy("phone-verify");
+    try {
+      const { error } = await authClient.phoneNumber.verify({
+        phoneNumber: e164,
+        code: code.trim(),
+      });
+      if (error) throw new Error(error.message ?? "Invalid code. Try again.");
+      window.location.assign("/");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Verification failed.";
+      setError(message);
+      toast.error(message);
+      setBusy(null);
+    }
+  }
+
+  if (step === "code") {
+    return (
+      <form onSubmit={verifyOtp} className="flex flex-col gap-3">
+        <p className="text-sm text-muted">
+          Code sent to <span className="tabular-nums text-fg">{e164}</span>
+        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="mm-otp">SMS code</Label>
+          <Input
+            id="mm-otp"
+            name="otp"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            disabled={locked}
+            placeholder="6-digit code"
+          />
+        </div>
+        <Button type="submit" className="h-12 w-full" disabled={locked}>
+          {busy === "phone-verify" ? "Verifying…" : "Verify & sign in"}
+        </Button>
+        <button
+          type="button"
+          className="text-sm text-muted hover:text-fg"
+          disabled={locked}
+          onClick={() => {
+            setStep("phone");
+            setCode("");
+          }}
+        >
+          Change number
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={sendOtp} className="flex flex-col gap-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="mm-phone">Mobile number</Label>
+        <Input
+          id="mm-phone"
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          required
+          value={phoneInput}
+          onChange={(e) => setPhoneInput(e.target.value)}
+          disabled={locked}
+          placeholder="+91 98765 43210"
+        />
+      </div>
+      <Button type="submit" variant="outline" className="h-12 w-full" disabled={locked}>
+        {busy === "phone-send" ? "Sending…" : "Send OTP"}
+      </Button>
+    </form>
   );
 }
 
@@ -103,13 +384,12 @@ function ProviderButton({
   busy: string | null;
   onPress: (id: string) => void;
 }) {
-  const isX = provider.idp === "twitter";
   const mine = busy === provider.providerId;
   const locked = Boolean(busy);
   return (
     <Button
       type="button"
-      variant={isX ? "default" : "outline"}
+      variant="outline"
       className="relative z-10 h-12 w-full justify-center gap-2.5 [&_svg]:pointer-events-none [&_svg]:size-[20px] [&_svg]:shrink-0 [&_svg]:overflow-visible"
       disabled={locked}
       onClick={() => onPress(provider.providerId)}
@@ -120,7 +400,7 @@ function ProviderButton({
   );
 }
 
-/** Full-colour Google G + X mark. Inline size beats Button's [&_svg]:size-4. */
+/** Full-colour Google G. Inline size beats Button's [&_svg]:size-4. */
 function ProviderMark({ idp }: { idp: string }) {
   if (idp === "google") {
     return (
@@ -151,21 +431,5 @@ function ProviderMark({ idp }: { idp: string }) {
       </svg>
     );
   }
-  // Official X path inset slightly so edges are not clipped at small sizes.
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={20}
-      height={20}
-      className="shrink-0 overflow-visible"
-      style={{ width: 20, height: 20, overflow: "visible" }}
-      aria-hidden="true"
-    >
-      <path
-        fill="currentColor"
-        transform="translate(12 12) scale(0.92) translate(-12 -12)"
-        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.727-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-      />
-    </svg>
-  );
+  return null;
 }

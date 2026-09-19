@@ -75,7 +75,7 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
         })
       : await auth.api.signInSocial({
           body: {
-            provider: providerId as "google" | "twitter",
+            provider: providerId as "google",
             callbackURL: back,
             errorCallbackURL: `${back}&error=1`,
           },

@@ -21,7 +21,7 @@ export { authConfigured };
 if (databaseConfigured && !authConfigured) {
   console.error(
     "[auth] DATABASE_URL is set but auth is not configured " +
-      "(need GOOGLE_* and/or TWITTER_* social secrets, or explicit GROK_AUTH_*, " +
+      "(need Google, email/password enabled, Twilio phone, or explicit GROK_AUTH_*, " +
       "and VITE_AUTH_ENABLED must not be false) — requireUserId() will reject " +
       "every request (fail closed) rather than share one dev user on a real database.",
   );

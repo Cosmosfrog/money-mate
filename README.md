@@ -22,8 +22,6 @@ Defaults to `http://0.0.0.0:8080`.
 - `npm run typecheck` — TypeScript
 - `npm test` — unit tests
 
-Imported from a Grok export. Wire your own auth/Stripe env as needed.
-
 ## Dev / Usage
 
 In **Settings**:
@@ -34,48 +32,50 @@ In **Settings**:
 
 See [docs/stripe.md](docs/stripe.md) for `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` and webhook setup.
 
-## Auth (Google + X — no Grok broker required)
+## Auth (Google + email + phone)
 
-Tonight’s Vercel mode uses Better Auth **built-in social providers**. You do **not** need `GROK_AUTH_*`.
+Ship mode uses Better Auth **Google social**, **email/password**, and **phone OTP** (Twilio SMS). No Grok broker. No X/Twitter.
 
-### Required core env
+### Core env
 
 | Variable | What it is |
 | --- | --- |
 | `DATABASE_URL` | Postgres connection string |
 | `BETTER_AUTH_SECRET` | Long random secret (session signing) |
-| `BETTER_AUTH_URL` | Public site origin, e.g. `https://your-app.vercel.app` (no trailing slash). Prefer your stable production host when you have one. |
-| `VITE_AUTH_ENABLED` | Set to `true` so sign-in is on (omit or any value other than `false` also leaves it on) |
+| `BETTER_AUTH_URL` | Public site origin, e.g. `https://your-app.vercel.app` (no trailing slash) |
+| `VITE_AUTH_ENABLED` | Set to `true` so sign-in is on |
 
-Optional: `BETTER_AUTH_TRUSTED_ORIGINS` — comma-separated full origins (custom domains). Vercel hash deploys are already covered via `VERCEL_URL` / `*.vercel.app`.
+Optional: `BETTER_AUTH_TRUSTED_ORIGINS` — comma-separated full origins (custom domains).
 
-### Google and/or X (pick at least one pair)
+### Google
 
-| Variable | Provider |
+| Variable | What it is |
 | --- | --- |
 | `GOOGLE_CLIENT_ID` | Google Cloud OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | Google Cloud OAuth client secret |
-| `TWITTER_CLIENT_ID` | X (Twitter) OAuth 2.0 client id |
-| `TWITTER_CLIENT_SECRET` | X (Twitter) OAuth 2.0 client secret |
 
-### Exact redirect / callback URLs
+### Phone SMS (Twilio)
 
-Register these on your OAuth apps (replace `YOUR_ORIGIN` with `BETTER_AUTH_URL`, e.g. `https://money-mate.vercel.app`):
+| Variable | What it is |
+| --- | --- |
+| `TWILIO_ACCOUNT_SID` | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token |
+| `TWILIO_PHONE_NUMBER` | Twilio from-number (E.164) |
 
-- Google: `YOUR_ORIGIN/api/auth/callback/google`
-- X (Twitter): `YOUR_ORIGIN/api/auth/callback/twitter`
+### Email / password
 
-Example:
+No extra provider secrets. Password auth works when the app flag is on (enabled in code). Needs `DATABASE_URL` in production so users persist.
 
-- `https://money-mate.vercel.app/api/auth/callback/google`
-- `https://money-mate.vercel.app/api/auth/callback/twitter`
+### Callback URL (Google)
 
-If you also use preview `*.vercel.app` hosts, add those same paths for each host you sign in from (or set `BETTER_AUTH_URL` to the stable host users open).
+Register on your Google OAuth client (replace with your `BETTER_AUTH_URL`):
 
-### Buttons
+- `{BETTER_AUTH_URL}/api/auth/callback/google`
 
-Login still says **Continue with Google** / **Continue with X**. Provider ids are `google` and `twitter` (Better Auth social), not `grok-*`.
+Example: `https://money-mate.vercel.app/api/auth/callback/google`
 
-### Optional: Grok auth broker
+### Sign-in UI
 
-Only if you set **both** `GROK_AUTH_CLIENT_ID` and `GROK_AUTH_CLIENT_SECRET` (optional `GROK_AUTH_ISSUER`). Preview baked defaults are **not** treated as configured on Vercel. Broker callbacks use `/api/auth/oauth2/callback/grok-google` and `/api/auth/oauth2/callback/grok-x`.
+- **Continue with Google**
+- Email + password (sign in / sign up)
+- Phone: Indian mobile (+91 or 10 digits) → Send OTP → enter code → verify

@@ -33,7 +33,7 @@ const BENEFITS = [
   },
   {
     title: "Reminders that follow you",
-    body: "Google or X. Same household on every phone. Browser alerts the day before, or on the due date — your call.",
+    body: "Google, email, or phone. Same household on every device. Browser alerts the day before, or on the due date — your call.",
   },
 ];
 
@@ -41,7 +41,7 @@ const STEPS = [
   {
     n: "01",
     title: "Sign in",
-    body: "Google or X. A secure window opens. We never see your password.",
+    body: "Google, email, or phone. Google opens a secure window; email and phone stay on the page.",
   },
   {
     n: "02",
@@ -112,7 +112,7 @@ const FAQS = [
   },
   {
     q: "Is my data on this account?",
-    a: "Yes. Google or X holds the login. Bills save to your account, not a shared demo. Export a JSON backup if you want a file copy.",
+    a: "Yes. Google, email, or phone holds the login. Bills save to your account, not a shared demo. Export a JSON backup if you want a file copy.",
   },
 ];
 
@@ -175,7 +175,7 @@ export function Landing({ authReady = true }: { authReady?: boolean }) {
             <div className="relative z-10 mt-8 max-w-sm" id="start">
               <AuthButtons ready={authReady} />
               <p className="mt-3 text-xs text-subtle">
-                A secure window opens. We never see your password.
+                Google opens a secure window. Email and phone stay on this page.
               </p>
             </div>
           </div>

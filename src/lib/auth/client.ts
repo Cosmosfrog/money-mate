@@ -1,4 +1,4 @@
-import { genericOAuthClient } from "better-auth/client/plugins";
+import { genericOAuthClient, phoneNumberClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
 import { AUTH_PROVIDERS, GROK_PROVIDERS, isBrokerProviderId } from "./providers";
@@ -18,7 +18,7 @@ import { AUTH_PROVIDERS, GROK_PROVIDERS, isBrokerProviderId } from "./providers"
  * the visitor stays signed in.
  */
 export const authClient = createAuthClient({
-  plugins: [genericOAuthClient()],
+  plugins: [genericOAuthClient(), phoneNumberClient()],
   fetchOptions: {
     onRequest(ctx) {
       const token = getBearerToken();
@@ -86,7 +86,7 @@ type PopupMessage = { source: "grok-auth-popup"; token: string | null; error?: s
  * Start sign-in with one upstream provider (`providerId` from `AUTH_PROVIDERS`
  * or a `grok-*` broker id).
  *
- * - **Social** (`google` / `twitter`): Better Auth `signIn.social`.
+ * - **Social** (`google`): Better Auth `signIn.social`.
  * - **Broker** (`grok-*`): `signIn.oauth2` via genericOAuth (optional).
  * - **Live preview** (`*.grok-sandbox.com` iframe): popup → `/auth/popup`.
  * - **Deployed**: full-page redirect.
@@ -152,7 +152,7 @@ export async function signIn(
   }
 
   const { data, error } = await authClient.signIn.social({
-    provider: providerId as "google" | "twitter",
+    provider: providerId as "google",
     callbackURL,
     errorCallbackURL,
   });

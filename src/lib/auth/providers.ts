@@ -3,9 +3,9 @@
  *
  * Dependency-free so the client can import without pulling Better Auth / `pg`.
  *
- * Default mode (Vercel deploy): Better Auth built-in **social** providers —
- * `providerId` is `google` / `twitter`, callbacks at
- * `/api/auth/callback/google` and `/api/auth/callback/twitter`.
+ * Ship mode: Better Auth built-in **Google** social only — `providerId` is
+ * `google`, callback at `/api/auth/callback/google`. Email/password and phone
+ * OTP are separate (not listed here).
  *
  * Optional fallback: Grok auth broker via `genericOAuth` when
  * `GROK_AUTH_CLIENT_ID` + `GROK_AUTH_CLIENT_SECRET` are set explicitly
@@ -15,7 +15,7 @@
 export type AuthProvider = {
   /** Local provider id; also the OAuth callback path segment. */
   providerId: string;
-  /** Upstream id for icons / branching (`google` | `twitter`). */
+  /** Upstream id for icons / branching (`google`). */
   idp: string;
   /** Human label for the sign-in button ("Continue with …"). */
   label: string;
@@ -24,7 +24,6 @@ export type AuthProvider = {
 /** Direct Better Auth social providers — what the sign-in UI renders. */
 export const AUTH_PROVIDERS: readonly AuthProvider[] = [
   { providerId: "google", idp: "google", label: "Google" },
-  { providerId: "twitter", idp: "twitter", label: "X" },
 ];
 
 /**
@@ -33,7 +32,6 @@ export const AUTH_PROVIDERS: readonly AuthProvider[] = [
  */
 export const GROK_BROKER_PROVIDERS: readonly AuthProvider[] = [
   { providerId: "grok-google", idp: "google", label: "Google" },
-  { providerId: "grok-x", idp: "twitter", label: "X" },
 ];
 
 /**

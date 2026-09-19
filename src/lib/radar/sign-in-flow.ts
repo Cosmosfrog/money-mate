@@ -50,7 +50,7 @@ async function signInViaPopup(providerId: string): Promise<void> {
   const url = `${origin}/auth/popup?providerId=${encodeURIComponent(providerId)}`;
   const popup = window.open(url, `grok-signin-${Date.now()}`, "popup,width=500,height=650");
   if (!popup) {
-    throw new Error("Allow pop-ups for this site, then tap Google or X again.");
+    throw new Error("Allow pop-ups for this site, then tap Google again.");
   }
   const token = await waitForPopupToken(popup);
   if (!token) throw new Error("Sign-in was cancelled or failed.");
@@ -67,7 +67,7 @@ async function signInViaPopup(providerId: string): Promise<void> {
 }
 
 /**
- * Start Google/X sign-in without waiting on a prior sign-out.
+ * Start Google sign-in without waiting on a prior sign-out.
  * Embedded / sandbox: popup on the tap so OAuth is not framed.
  * Top-level: Better Auth social redirect (or broker oauth2 for grok-* ids).
  */
@@ -90,7 +90,7 @@ export async function startProviderSignIn(providerId: string): Promise<void> {
     throw new Error("Sign-in failed. Try again.");
   }
   const { data, error } = await authClient.signIn.social({
-    provider: providerId as "google" | "twitter",
+    provider: providerId as "google",
     callbackURL: "/",
     errorCallbackURL: "/",
   });
