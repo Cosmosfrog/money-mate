@@ -1,7 +1,7 @@
 import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
-import { GROK_PROVIDERS } from "./providers";
+import { AUTH_PROVIDERS, GROK_PROVIDERS, isBrokerProviderId } from "./providers";
 
 /**
  * Better Auth client for this React SPA (browser-side).
@@ -37,8 +37,8 @@ export const authClient = createAuthClient({
  */
 export const authEnabled = import.meta.env.VITE_AUTH_ENABLED !== "false";
 
-/** The upstream providers to render sign-in buttons for. */
-export { GROK_PROVIDERS };
+/** The upstream providers to render sign-in buttons for (direct social). */
+export { AUTH_PROVIDERS, GROK_PROVIDERS };
 
 // ── Live-preview bearer token ────────────────────────────────────────────────
 // The embedded preview iframe has partitioned cookies, so we keep the session's
@@ -83,18 +83,15 @@ function inLivePreview(): boolean {
 type PopupMessage = { source: "grok-auth-popup"; token: string | null; error?: string };
 
 /**
- * Start sign-in with one upstream provider (`providerId` from `GROK_PROVIDERS`),
- * federating through the Grok auth broker.
+ * Start sign-in with one upstream provider (`providerId` from `AUTH_PROVIDERS`
+ * or a `grok-*` broker id).
  *
- * - **Live preview** (`*.grok-sandbox.com` iframe): opens a POPUP to
- *   `/auth/popup`, served by the template Vite plugin (see `vite.config.ts` +
- *   `popup.server.ts`) — 302s to the broker/upstream login (no app chrome) and,
- *   on return, posts the session bearer token back. We store it and refresh the
- *   session; no top-level navigation of the iframe to the broker.
- * - **Deployed** (and local non-iframe): a normal full-page redirect into the broker.
+ * - **Social** (`google` / `twitter`): Better Auth `signIn.social`.
+ * - **Broker** (`grok-*`): `signIn.oauth2` via genericOAuth (optional).
+ * - **Live preview** (`*.grok-sandbox.com` iframe): popup → `/auth/popup`.
+ * - **Deployed**: full-page redirect.
  *
- * Either way it clears any existing local session FIRST so switching providers
- * actually switches identity.
+ * Clears any existing local session first so switching providers switches identity.
  */
 export async function signIn(
   providerId: string,
@@ -143,8 +140,19 @@ export async function signIn(
     return;
   }
 
-  const { data, error } = await authClient.signIn.oauth2({
-    providerId,
+  if (isBrokerProviderId(providerId)) {
+    const { data, error } = await authClient.signIn.oauth2({
+      providerId,
+      callbackURL,
+      errorCallbackURL,
+    });
+    if (error) throw new Error(error.message ?? "Sign-in failed");
+    if (data?.url) window.location.href = data.url;
+    return;
+  }
+
+  const { data, error } = await authClient.signIn.social({
+    provider: providerId as "google" | "twitter",
     callbackURL,
     errorCallbackURL,
   });

@@ -1,31 +1,48 @@
 /**
- * The upstream identity providers this app offers for sign-in (via the broker).
+ * Sign-in providers shared by the UI and auth wiring.
  *
- * Source of truth for BOTH the server (`server.ts`, one `genericOAuth` provider
- * per entry) and the client (`client.ts` / sign-in buttons). Kept in its own
- * dependency-free module so the client can import it without pulling the
- * server-only Better Auth instance (and `pg`) into the browser bundle.
+ * Dependency-free so the client can import without pulling Better Auth / `pg`.
  *
- * Each app federates to the shared **auth broker** (`GROK_AUTH_ISSUER`), which
- * holds the real Google/X secrets. The app never sees them — it only knows its
- * own per-app client id/secret and which upstream to ask the broker for (`idp`).
+ * Default mode (Vercel deploy): Better Auth built-in **social** providers —
+ * `providerId` is `google` / `twitter`, callbacks at
+ * `/api/auth/callback/google` and `/api/auth/callback/twitter`.
  *
- * To add an upstream (e.g. GitHub) once the broker supports it: add one entry
- * here (`{ providerId: "grok-github", idp: "github", label: "GitHub" }`). The
- * `providerId` is this app's local id and the OAuth callback path segment
- * (`/api/auth/oauth2/callback/<providerId>`); `idp` is the hint the broker reads
- * to pick the upstream (Better Auth's id for X is still `twitter`).
+ * Optional fallback: Grok auth broker via `genericOAuth` when
+ * `GROK_AUTH_CLIENT_ID` + `GROK_AUTH_CLIENT_SECRET` are set explicitly
+ * (never the preview baked defaults). Those use `grok-*` ids and
+ * `/api/auth/oauth2/callback/<providerId>`.
  */
-export type GrokProvider = {
-  /** This app's local provider id; also the callback path segment. */
+export type AuthProvider = {
+  /** Local provider id; also the OAuth callback path segment. */
   providerId: string;
-  /** Upstream hint the broker forwards to (Better Auth social id). */
+  /** Upstream id for icons / branching (`google` | `twitter`). */
   idp: string;
-  /** Human label for the sign-in button. */
+  /** Human label for the sign-in button ("Continue with …"). */
   label: string;
 };
 
-export const GROK_PROVIDERS: readonly GrokProvider[] = [
+/** Direct Better Auth social providers — what the sign-in UI renders. */
+export const AUTH_PROVIDERS: readonly AuthProvider[] = [
+  { providerId: "google", idp: "google", label: "Google" },
+  { providerId: "twitter", idp: "twitter", label: "X" },
+];
+
+/**
+ * Grok broker genericOAuth providers (server only when explicit GROK_AUTH_*).
+ * Not shown in the UI unless you switch the client list to these.
+ */
+export const GROK_BROKER_PROVIDERS: readonly AuthProvider[] = [
   { providerId: "grok-google", idp: "google", label: "Google" },
   { providerId: "grok-x", idp: "twitter", label: "X" },
 ];
+
+/**
+ * Alias for UI imports that still say `GROK_PROVIDERS`. Same as `AUTH_PROVIDERS`
+ * (direct social). Broker ids live in `GROK_BROKER_PROVIDERS`.
+ */
+export const GROK_PROVIDERS = AUTH_PROVIDERS;
+
+/** True when `providerId` is a Grok broker genericOAuth id (`grok-*`). */
+export function isBrokerProviderId(providerId: string): boolean {
+  return providerId.startsWith("grok-");
+}

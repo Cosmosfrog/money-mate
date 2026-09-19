@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth/client";
+import { isBrokerProviderId } from "@/lib/auth/providers";
 
 const BEARER_KEY = "grok-auth.bearer-token";
 
@@ -68,15 +69,28 @@ async function signInViaPopup(providerId: string): Promise<void> {
 /**
  * Start Google/X sign-in without waiting on a prior sign-out.
  * Embedded / sandbox: popup on the tap so OAuth is not framed.
- * Top-level: go straight to the broker.
+ * Top-level: Better Auth social redirect (or broker oauth2 for grok-* ids).
  */
 export async function startProviderSignIn(providerId: string): Promise<void> {
   if (inIframe() || isSandboxHost()) {
     await signInViaPopup(providerId);
     return;
   }
-  const { data, error } = await authClient.signIn.oauth2({
-    providerId,
+  if (isBrokerProviderId(providerId)) {
+    const { data, error } = await authClient.signIn.oauth2({
+      providerId,
+      callbackURL: "/",
+      errorCallbackURL: "/",
+    });
+    if (error) throw new Error(error.message ?? "Sign-in failed. Try again.");
+    if (data?.url) {
+      window.location.assign(data.url);
+      return;
+    }
+    throw new Error("Sign-in failed. Try again.");
+  }
+  const { data, error } = await authClient.signIn.social({
+    provider: providerId as "google" | "twitter",
     callbackURL: "/",
     errorCallbackURL: "/",
   });
