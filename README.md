@@ -33,3 +33,10 @@ In **Settings**:
 ## Stripe Pro
 
 See [docs/stripe.md](docs/stripe.md) for `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` and webhook setup.
+
+## Auth (Better Auth + Grok broker)
+
+- Set `BETTER_AUTH_URL` to your **stable** production host when you have one (must match the public URL users open).
+- Until then, Vercel hash deploys are covered via `VERCEL_URL` / `*.vercel.app` in Better Auth `trustedOrigins` / dynamic `baseURL`.
+- Optional: `BETTER_AUTH_TRUSTED_ORIGINS` — comma-separated full origins (custom domains).
+- **Ship / broker:** the Grok OAuth app still needs a callback allowlist. Add the public origin plus `/api/auth/callback/*` paths in the broker for every host users sign in from (stable domain and/or current `*.vercel.app` deployment).
