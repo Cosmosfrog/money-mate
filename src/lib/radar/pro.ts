@@ -55,10 +55,17 @@ export function consumeCheckoutSuccess(): boolean {
   return true;
 }
 
-export function startProCheckout(plan: ProPlanId = "yearly") {
+export function startProCheckout(
+  plan: ProPlanId = "yearly",
+  opts?: { userId?: string | null; email?: string | null },
+) {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(PENDING, String(Date.now()));
-  const payUrl = PRO_PLANS[plan].url;
+  const url = new URL(PRO_PLANS[plan].url);
+  // Payment Links accept client_reference_id + prefilled_email as query params.
+  if (opts?.userId) url.searchParams.set("client_reference_id", opts.userId);
+  if (opts?.email) url.searchParams.set("prefilled_email", opts.email);
+  const payUrl = url.toString();
   const popup = window.open(payUrl, "_blank", "noopener,noreferrer");
   if (!popup) window.location.assign(payUrl);
 }
@@ -72,6 +79,7 @@ export function pendingCheckoutMatured(minMs = 8000): boolean {
   return true;
 }
 
+/** Optimistic unlock from ?checkout=success only. Server is_pro is source of truth. */
 export function tryUnlockPro(): boolean {
-  return consumeCheckoutSuccess() || pendingCheckoutMatured();
+  return consumeCheckoutSuccess();
 }

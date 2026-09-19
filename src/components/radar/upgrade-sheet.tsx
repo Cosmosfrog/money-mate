@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/radar/format";
@@ -17,6 +18,7 @@ interface UpgradeSheetProps {
 }
 
 export function UpgradeSheet({ open, onOpenChange }: UpgradeSheetProps) {
+  const user = useCurrentUser();
   const [plan, setPlan] = useState<ProPlanId>("yearly");
   const selected = PRO_PLANS[plan];
 
@@ -66,7 +68,7 @@ export function UpgradeSheet({ open, onOpenChange }: UpgradeSheetProps) {
               <Button
                 className="h-12 w-full"
                 onClick={() => {
-                  startProCheckout(plan);
+                  startProCheckout(plan, { userId: user?.id, email: user?.primaryEmail });
                   onOpenChange(false);
                 }}
               >

@@ -160,6 +160,12 @@ export const saveRadar = createServerFn({ method: "POST" })
     const payments = data.payments.map((p) => normalizePayment(p as Payment));
     const settings = normalizeSettings(data.settings);
 
+    // Server is_pro is source of truth (Stripe webhook). Never trust client unlock.
+    const existingPro = await sql<Record<string, unknown>>`
+      select is_pro from radar_settings where user_id = ${userId}
+    `;
+    const isPro = bool(existingPro[0]?.is_pro);
+
     await sql`delete from radar_bills where user_id = ${userId}`;
     await sql`delete from radar_payments where user_id = ${userId}`;
     await sql`delete from radar_settings where user_id = ${userId}`;
@@ -199,7 +205,7 @@ export const saveRadar = createServerFn({ method: "POST" })
       ) values (
         ${userId}, ${settings.income}, ${settings.paydayDay}, ${settings.reminderDays},
         ${settings.notifyEnabled}, ${JSON.stringify(settings.notifiedKeys)},
-        ${settings.startedEmpty}, ${settings.isSample}, ${settings.isPro},
+        ${settings.startedEmpty}, ${settings.isSample}, ${isPro},
         ${settings.goalName}, ${settings.goalTarget}
       )
     `;

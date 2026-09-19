@@ -13,6 +13,7 @@ import {
   tryUnlockPro,
 } from "@/lib/radar/pro";
 import { enrich } from "@/lib/radar/selectors";
+import { loadRadar } from "@/lib/radar/api";
 import { useBillStore } from "@/lib/radar/store";
 import type { AppView, Bill } from "@/lib/radar/types";
 import { cn } from "@/lib/utils";
@@ -66,8 +67,23 @@ export function RadarApp() {
       captureCheckoutReturn();
       if (useBillStore.getState().settings.isPro) return;
       if (!tryUnlockPro()) return;
+      // Optimistic UX only — webhook/server is_pro is source of truth.
       useBillStore.getState().setPro(true);
       toast("Pro is on. Unlimited bills and money tools.");
+      void (async () => {
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 1500));
+          try {
+            const snap = await loadRadar();
+            if (snap.settings.isPro) {
+              useBillStore.getState().setPro(true);
+              return;
+            }
+          } catch {
+            /* keep optimistic until hydrate */
+          }
+        }
+      })();
     };
     unlock();
     const later = window.setTimeout(unlock, 8500);

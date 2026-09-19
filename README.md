@@ -29,3 +29,7 @@ Imported from a Grok export. Wire your own auth/Stripe env as needed.
 In **Settings**:
 - **Load sample household** — seed demo rent/EMIs/utilities when empty.
 - **Start fresh** — erase all bills (tap twice to confirm).
+
+## Stripe Pro
+
+See [docs/stripe.md](docs/stripe.md) for `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` and webhook setup.
