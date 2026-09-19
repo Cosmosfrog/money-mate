@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Figtree";
+        font-style: normal;
+        font-weight: 500 700;
+        font-display: block;
+        src: url("fonts/f1-_Xms-HUzqDCFdgfMm4S9DQ.woff2") format("woff2");
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: "Figtree";
+        font-style: normal;
+        font-weight: 500 700;
+        font-display: block;
+        src: url("fonts/f0-_Xms-HUzqDCFdgfMm4q9DbZs.woff2") format("woff2");
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: "Fraunces";
+        font-style: normal;
+        font-weight: 500 600;
+        font-display: block;
+        src: url("fonts/f8-6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeA.woff2") format("woff2");
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: "Fraunces";
+        font-style: normal;
+        font-weight: 500 600;
+        font-display: block;
+        src: url("fonts/f7-6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxCFTeO-U.woff2") format("woff2");
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 264px;
+        background: #0c0d0f;
+        color: #ecece8;
+        overflow: hidden;
+        font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+      }
+      .stage {
+        position: relative;
+        width: 1200px;
+        height: 264px;
+        background:
+          radial-gradient(ellipse 46% 160% at 88% 50%, rgb(226 177 60 / 0.28), transparent 60%),
+          radial-gradient(ellipse 28% 140% at 8% 110%, rgb(28 122 92 / 0.12), transparent 54%),
+          #0c0d0f;
+      }
+      .radar {
+        position: absolute;
+        right: -70px;
+        top: 50%;
+        width: 420px;
+        height: 420px;
+        transform: translateY(-50%);
+      }
+      .coin {
+        position: absolute;
+        right: 56px;
+        top: 50%;
+        width: 168px;
+        height: 168px;
+        transform: translateY(-50%);
+        filter: drop-shadow(0 14px 32px rgb(0 0 0 / 0.5));
+      }
+      .copy {
+        position: absolute;
+        left: 48px;
+        top: 30px;
+        width: 540px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .mark {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+      }
+      .mark svg {
+        width: 44px;
+        height: 44px;
+        display: block;
+      }
+      .kicker {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #8a8478;
+      }
+      h1 {
+        margin: 4px 0 0;
+        font-family: Fraunces, ui-serif, Georgia, serif;
+        font-weight: 500;
+        font-size: 42px;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        color: #ecece8;
+      }
+      .tag {
+        margin: 12px 0 0 58px;
+        font-size: 16px;
+        line-height: 1.3;
+        color: #8b8d93;
+        max-width: 420px;
+      }
+      .next {
+        margin: 12px 0 0 58px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #ecece8;
+      }
+      .next em {
+        font-style: normal;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #c45c5c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <svg class="radar" viewBox="0 0 420 420" aria-hidden="true">
+        <defs>
+          <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e2b13c" stop-opacity="0" />
+            <stop offset="100%" stop-color="#e2b13c" stop-opacity="0.36" />
+          </linearGradient>
+        </defs>
+        <circle cx="210" cy="210" r="188" fill="none" stroke="#ecece8" stroke-opacity="0.09" stroke-width="1.4" />
+        <circle cx="210" cy="210" r="132" fill="none" stroke="#ecece8" stroke-opacity="0.09" stroke-width="1.4" />
+        <circle cx="210" cy="210" r="78" fill="none" stroke="#ecece8" stroke-opacity="0.09" stroke-width="1.4" />
+        <path d="M210 210 L210 22 A188 188 0 0 1 352 96 Z" fill="url(#sweep)" />
+        <circle cx="334" cy="88" r="6.5" fill="#c45c5c" />
+        <circle cx="360" cy="210" r="5" fill="#c4a36a" />
+      </svg>
+      <svg class="coin" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="15" fill="#16140f" />
+        <circle cx="16" cy="16" r="12.55" fill="#b8862a" />
+        <circle cx="16" cy="16" r="12.15" fill="#e2b13c" />
+        <circle cx="16" cy="16" r="12.15" fill="none" stroke="#f6d56b" stroke-width="1.05" />
+        <path d="M8.4 12.2a8.4 8.4 0 0 1 7.4-5.3" fill="none" stroke="#fff1b8" stroke-width="1.15" stroke-linecap="round" opacity="0.55" />
+        <circle cx="16" cy="16" r="7.55" fill="#145a44" />
+        <circle cx="16" cy="16" r="7.15" fill="#1c7a5c" />
+        <path d="M12.05 10.55h8.15M12.05 14.15h6.35M12.05 10.35v12.2M12.05 14.15L20.05 22.2" fill="none" stroke="#f4fbf7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="23.75" cy="8.85" r="2.7" fill="#9a3d1c" />
+        <circle cx="23.75" cy="8.85" r="2.35" fill="#e06c3a" />
+      </svg>
+      <div class="copy">
+        <div class="row">
+          <div class="mark">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="16" cy="16" r="15" fill="#16140f" />
+              <circle cx="16" cy="16" r="12.55" fill="#b8862a" />
+              <circle cx="16" cy="16" r="12.15" fill="#e2b13c" />
+              <circle cx="16" cy="16" r="12.15" fill="none" stroke="#f6d56b" stroke-width="1.05" />
+              <path d="M8.4 12.2a8.4 8.4 0 0 1 7.4-5.3" fill="none" stroke="#fff1b8" stroke-width="1.15" stroke-linecap="round" opacity="0.55" />
+              <circle cx="16" cy="16" r="7.55" fill="#145a44" />
+              <circle cx="16" cy="16" r="7.15" fill="#1c7a5c" />
+              <path d="M12.05 10.55h8.15M12.05 14.15h6.35M12.05 10.35v12.2M12.05 14.15L20.05 22.2" fill="none" stroke="#f4fbf7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="23.75" cy="8.85" r="2.7" fill="#9a3d1c" />
+              <circle cx="23.75" cy="8.85" r="2.35" fill="#e06c3a" />
+            </svg>
+          </div>
+          <div>
+            <p class="kicker">Bill & EMI radar</p>
+            <h1>Money Mate</h1>
+          </div>
+        </div>
+        <p class="tag">See money leave before it leaves.</p>
+        <p class="next"><em>Next out</em> · Car EMI ₹11,240</p>
+      </div>
+    </div>
+  </body>
+</html>

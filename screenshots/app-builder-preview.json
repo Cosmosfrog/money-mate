@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Money Mate",
+      "hasCanvas": false,
+      "bodyTextLen": 3321,
+      "bodyTextHash": "c66b72bc12c8bcdbac036b8dfd59da2758e947f62417c7f510675f0ad78242ed",
+      "bodyTextPrefix": "Money Mate Why Benefits Pricing Sign in Light Dark Start free BI",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Money Mate",
+      "hasCanvas": false,
+      "bodyTextLen": 3366,
+      "bodyTextHash": "8dba855e1e859bed53533757705ff38719d28af260786e3bd64bbc0469ccc1d5",
+      "bodyTextPrefix": "Money Mate Light Dark Start free BILL & EMI RADAR See money leav",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
