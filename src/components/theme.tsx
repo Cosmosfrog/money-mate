@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { Toaster } from "sonner";
 import {
@@ -17,8 +25,13 @@ const ThemeCtx = createContext<{
 } | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [pref, setPrefState] = useState<ThemePref>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("dark");
+  const [pref, setPrefState] = useState<ThemePref>(() =>
+    typeof window === "undefined" ? "system" : readThemePref(),
+  );
+  const [resolved, setResolved] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "dark";
+    return resolveTheme(readThemePref());
+  });
 
   useEffect(() => {
     const initial = readThemePref();
@@ -28,6 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
       const current = readThemePref();
+      if (current !== "system") return;
       applyTheme(current);
       setResolved(resolveTheme(current));
     };
@@ -35,7 +49,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const setPref = (next: ThemePref) => {
+  const setPref = useCallback((next: ThemePref) => {
     try {
       window.localStorage.setItem(THEME_KEY, next);
     } catch {
@@ -44,9 +58,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setPrefState(next);
     applyTheme(next);
     setResolved(resolveTheme(next));
-  };
+  }, []);
 
-  const value = useMemo(() => ({ pref, resolved, setPref }), [pref, resolved]);
+  const value = useMemo(() => ({ pref, resolved, setPref }), [pref, resolved, setPref]);
 
   return (
     <ThemeCtx.Provider value={value}>
@@ -69,13 +83,13 @@ export function useTheme() {
     return {
       pref: "system" as ThemePref,
       resolved: "dark" as const,
-      setPref: () => {},
+      setPref: (_pref: ThemePref) => {},
     };
   }
   return ctx;
 }
 
-/** Header control: Light and Dark are both visible. Every tap changes the page. */
+/** Header control: explicit Light | Dark. Every tap applies that theme immediately. */
 export function ThemeToggle({ compact = false, className }: { compact?: boolean; className?: string }) {
   const { resolved, setPref } = useTheme();
 
@@ -139,6 +153,7 @@ function ThemeChoice({
   );
 }
 
+/** Settings: Light | Dark | System. */
 export function ThemePicker() {
   const { pref, setPref } = useTheme();
   const options: { id: ThemePref; label: string; icon: typeof Sun }[] = [
