@@ -1,0 +1,11 @@
+{
+  "name": "Money Mate",
+  "install": "npm ci && npx playwright install chromium --with-deps",
+  "start": "node scripts/preview.mjs stop || true",
+  "terminals": [
+    {
+      "name": "Dev server",
+      "command": "npm run dev"
+    }
+  ]
+}
